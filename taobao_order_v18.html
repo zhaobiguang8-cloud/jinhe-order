@@ -311,15 +311,11 @@ textarea.field-input { resize:none; line-height:1.6; }
 .delivery-sub { font-size:12px; color:#999; font-weight:400; margin-top:2px; }
 .delivery-arrow-r { flex-shrink:0; color:#c8c8c8; }
 
-/* 橙色支付栏 - 固定在底部 */
+/* 橙色支付栏 - 普通流，紧接数量行 */
 .pay-section {
-  position:fixed; bottom:0; left:50%; transform:translateX(-50%);
-  width:100%; max-width:600px;
-  background:#fff; padding:10px 16px 16px;
-  z-index:200;
-  box-shadow:0 -2px 12px rgba(0,0,0,.06);
+  background:#fff; padding:12px 16px 16px;
 }
-.pay-bottom-placeholder { height:80px; }
+.pay-bottom-placeholder { height:0; }
 .pay-bar-inner {
   background:linear-gradient(135deg,#FF8C00,#FF6600);
   border-radius:28px; padding:14px 22px;
