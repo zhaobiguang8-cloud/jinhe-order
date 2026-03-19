@@ -1,4 +1,3 @@
-[taobao_order_v18.html](https://github.com/user-attachments/files/26111350/taobao_order_v18.html)
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -298,9 +297,9 @@ textarea.field-input { resize:none; line-height:1.6; }
 .o-sku-text { font-size:12px; color:#333; line-height:1.45; font-weight:400; flex:1; }
 
 /* 配送区 */
-.delivery-section { background:#fff; margin-top:8px; }
+.delivery-section { background:#fff; margin-top:0; }
 .delivery-item {
-  padding:13px 16px; display:flex; align-items:center;
+  padding:10px 16px; display:flex; align-items:center;
   gap:10px; border-bottom:1px solid #f0f0f0; cursor:pointer;
 }
 .delivery-icon-wrap {
@@ -312,8 +311,15 @@ textarea.field-input { resize:none; line-height:1.6; }
 .delivery-sub { font-size:12px; color:#999; font-weight:400; margin-top:2px; }
 .delivery-arrow-r { flex-shrink:0; color:#c8c8c8; }
 
-/* 橙色支付栏 */
-.pay-section { background:#fff; margin-top:8px; padding:12px 16px 16px; }
+/* 橙色支付栏 - 固定在底部 */
+.pay-section {
+  position:fixed; bottom:0; left:50%; transform:translateX(-50%);
+  width:100%; max-width:600px;
+  background:#fff; padding:10px 16px 16px;
+  z-index:200;
+  box-shadow:0 -2px 12px rgba(0,0,0,.06);
+}
+.pay-bottom-placeholder { height:80px; }
 .pay-bar-inner {
   background:linear-gradient(135deg,#FF8C00,#FF6600);
   border-radius:28px; padding:14px 22px;
@@ -543,7 +549,7 @@ textarea.field-input { resize:none; line-height:1.6; }
 
   <!-- 店铺名 -->
   <div class="shop-row">
-    <div class="shop-icon-box">店</div>
+    <div class="shop-icon-box">淘</div>
     <span class="shop-name-text" id="o-shop">汇生大药房旗舰店</span>
     <svg class="shop-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -603,7 +609,7 @@ textarea.field-input { resize:none; line-height:1.6; }
     </div>
 
     <!-- 数量 -->
-    <div class="row-item" style="border-bottom:none;">
+    <div class="row-item" style="border-bottom:none; padding:9px 16px;">
       <span class="row-label">数量</span>
       <div style="display:flex; align-items:center; gap:10px;">
         <div class="qty-control">
@@ -670,7 +676,7 @@ textarea.field-input { resize:none; line-height:1.6; }
     </div>
   </div>
 
-  <div style="height:24px;"></div>
+  <div class="pay-bottom-placeholder"></div>
 </div>
 
 <!-- 弹窗 -->
