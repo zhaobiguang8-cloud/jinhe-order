@@ -1,2 +1,943 @@
-# jinhe-order
-金柯藏药
+[taobao_order_v18.html](https://github.com/user-attachments/files/26111350/taobao_order_v18.html)
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>淘宝下单页</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif;
+  background:#f5f5f5; color:#333;
+  max-width:600px; margin:0 auto; min-height:100vh;
+}
+
+/* ===== 编辑器 ===== */
+#editor-page { display:block; }
+#order-page  { display:none; }
+
+.editor-header {
+  background:#fff; padding:14px 16px;
+  display:flex; align-items:center; gap:10px;
+  border-bottom:2px solid #FF6600;
+  position:sticky; top:0; z-index:100;
+}
+.editor-header-title { font-size:17px; font-weight:700; color:#333; flex:1; }
+.editor-mode-badge {
+  background:#FF6600; color:#fff;
+  font-size:11px; padding:3px 8px; border-radius:4px; font-weight:600;
+}
+.editor-hint { font-size:12px; color:#999; padding:10px 16px 6px; background:#fff8f3; }
+
+.editor-section { background:#fff; margin-top:8px; padding:16px; }
+.editor-section-title {
+  font-size:13px; font-weight:700; color:#FF6600;
+  margin-bottom:12px; display:flex; align-items:center; gap:6px;
+}
+.editor-section-title::before {
+  content:''; width:4px; height:14px;
+  background:#FF6600; border-radius:2px; display:block;
+}
+.field-group { margin-bottom:14px; }
+.field-label { font-size:12px; color:#999; margin-bottom:5px; }
+.field-input {
+  width:100%; border:1px solid #e8e8e8; border-radius:6px;
+  padding:10px 12px; font-size:14px; color:#333;
+  outline:none; background:#fafafa; transition:border-color .2s;
+}
+.field-input:focus { border-color:#FF6600; background:#fff; }
+textarea.field-input { resize:none; line-height:1.6; }
+.field-row { display:flex; gap:10px; }
+.field-row .field-group { flex:1; }
+
+.sku-options { display:flex; gap:8px; flex-wrap:wrap; margin-top:4px; }
+.sku-opt {
+  border:1.5px solid #e8e8e8; border-radius:6px;
+  padding:7px 12px; font-size:13px; cursor:pointer;
+  background:#fff; color:#333; transition:all .2s; user-select:none;
+}
+.sku-opt.active { border-color:#FF6600; color:#FF6600; background:#fff8f3; }
+
+.tag-editor { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+.tag-item {
+  border:1.5px solid #e8e8e8; border-radius:4px;
+  padding:5px 10px; font-size:12px; cursor:pointer;
+  background:#fff; color:#666; transition:all .2s; user-select:none;
+}
+.tag-item.active { border-color:#FF6600; color:#FF6600; background:#fff8f3; }
+
+.img-upload-area {
+  border:2px dashed #e8e8e8; border-radius:8px;
+  height:110px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  cursor:pointer; color:#ccc; font-size:13px; gap:6px;
+  position:relative; overflow:hidden; transition:border-color .2s;
+}
+.img-upload-area:hover { border-color:#FF6600; }
+.img-upload-area input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.img-preview { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; border-radius:6px; }
+.img-upload-icon { font-size:28px; }
+
+.ladder-row { display:flex; align-items:center; gap:8px; margin-bottom:8px; }
+.ladder-num {
+  width:50px; border:1px solid #e8e8e8; border-radius:6px;
+  padding:8px 10px; font-size:13px; text-align:center; outline:none;
+}
+.ladder-label { font-size:13px; color:#666; flex-shrink:0; }
+.ladder-val { flex:1; border:1px solid #e8e8e8; border-radius:6px; padding:8px 10px; font-size:13px; outline:none; }
+.ladder-unit { font-size:13px; color:#666; }
+.ladder-del {
+  width:24px; height:24px; border-radius:50%;
+  background:#f5f5f5; border:none; cursor:pointer;
+  font-size:16px; color:#999; display:flex; align-items:center; justify-content:center;
+}
+.add-ladder-btn {
+  width:100%; border:1.5px dashed #e8e8e8; border-radius:6px;
+  padding:9px; font-size:13px; color:#999; background:#fff;
+  cursor:pointer; margin-top:4px; transition:border-color .2s, color .2s;
+}
+.add-ladder-btn:hover { border-color:#FF6600; color:#FF6600; }
+
+.generate-btn {
+  width:calc(100% - 32px); margin:16px 16px 32px;
+  background:linear-gradient(135deg,#FF8C00,#FF6600);
+  color:#fff; border:none; border-radius:28px;
+  padding:16px; font-size:16px; font-weight:700;
+  cursor:pointer; letter-spacing:2px;
+  box-shadow:0 4px 16px rgba(255,102,0,.35);
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.generate-btn:active { transform:scale(.98); }
+
+/* ===== 字体规范（全局统一） ===== */
+/* 主要文字: #1a1a1a  font-weight:400 */
+/* 次要文字: #666     font-weight:400 */
+/* 辅助文字: #999     font-weight:400 */
+/* 强调/标题: #1a1a1a font-weight:600 */
+/* 价格橙色: #FF6600  font-weight:700 */
+/* 绿色配送: #07A96B  font-weight:400 */
+
+/* ===== 订单页面 ===== */
+.nav-bar {
+  background:#fff; display:flex; align-items:center; justify-content:center;
+  padding:14px 16px; position:sticky; top:0; z-index:100;
+  border-bottom:1px solid #ececec;
+}
+.nav-back {
+  position:absolute; left:16px; font-size:24px; color:#1a1a1a;
+  cursor:pointer; background:none; border:none;
+  width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+}
+.nav-title { font-size:16px; font-weight:600; color:#1a1a1a; }
+
+/* 商品主区域 */
+.product-main { background:#fff; margin-top:0; }
+
+/* 商品图片 + 标题区 */
+.product-top {
+  display:flex; padding:14px 16px; gap:14px;
+  border-bottom:1px solid #f0f0f0;
+}
+.product-img-box {
+  width:100px; height:100px; border-radius:8px;
+  flex-shrink:0; overflow:hidden;
+  border:1px solid #eee; background:#f5ede0;
+  display:flex; align-items:center; justify-content:center;
+}
+.product-img-box img { width:100%; height:100%; object-fit:cover; }
+.product-right { flex:1; min-width:0; }
+
+/* 天猫好药标签 + 标题 */
+.title-line {
+  display:flex; align-items:flex-start; gap:6px;
+  margin-bottom:6px; flex-wrap:wrap;
+}
+.tmall-badge {
+  background:#FF1A1A; color:#fff;
+  font-size:10px; padding:2px 5px; border-radius:3px;
+  font-weight:600; flex-shrink:0; margin-top:2px; white-space:nowrap;
+  letter-spacing:0.5px;
+}
+.product-title-text {
+  font-size:14px; font-weight:600; color:#1a1a1a; line-height:1.55;
+}
+.otc-line {
+  font-size:12px; color:#999; font-weight:400;
+  margin-bottom:0; line-height:1.5;
+}
+.otc-label {
+  display:inline-block; border:1px solid #07A96B;
+  color:#07A96B; font-size:10px; padding:0 4px;
+  border-radius:2px; margin-right:5px; font-weight:600;
+  vertical-align:middle;
+}
+
+/* 信息条 */
+.info-bar {
+  display:flex; gap:8px; padding:10px 16px 12px;
+  flex-wrap:nowrap; overflow-x:auto;
+}
+.info-bar::-webkit-scrollbar { display:none; }
+.info-chip {
+  background:#f5f5f5; border-radius:14px;
+  padding:4px 10px; font-size:12px; color:#666; font-weight:400;
+  white-space:nowrap; flex-shrink:0;
+}
+.info-chip-green {
+  background:#e8f8f1; color:#07A96B;
+  border:1px solid #b8e8d0;
+  border-radius:14px; padding:4px 10px;
+  font-size:12px; white-space:nowrap; flex-shrink:0; font-weight:600;
+}
+
+/* 价格行 */
+.price-section {
+  padding:12px 16px 10px;
+  border-bottom:1px solid #f0f0f0;
+  display:flex; align-items:baseline; gap:8px;
+}
+.price-main { font-size:26px; font-weight:700; color:#FF6600; line-height:1; }
+.price-main .yuan { font-size:15px; font-weight:700; }
+.price-original { font-size:13px; color:#bbb; font-weight:400; text-decoration:line-through; }
+
+/* 行通用样式 */
+.row-item {
+  padding:13px 16px; border-bottom:1px solid #f0f0f0;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.row-label { font-size:13px; color:#666; font-weight:400; flex-shrink:0; margin-right:12px; }
+.row-value { font-size:13px; color:#1a1a1a; font-weight:400; flex:1; }
+/* SVG 箭头 */
+.row-arrow {
+  flex-shrink:0; margin-left:8px;
+  color:#c8c8c8;
+}
+
+/* 数量控制 */
+.qty-control {
+  display:flex; align-items:center;
+  border:1px solid #e0e0e0; border-radius:6px; overflow:hidden;
+}
+.qty-btn {
+  width:32px; height:32px; background:#f7f7f7;
+  border:none; font-size:18px; color:#333; font-weight:400;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  line-height:1;
+}
+.qty-num {
+  width:40px; height:32px; border:none;
+  border-left:1px solid #e0e0e0; border-right:1px solid #e0e0e0;
+  text-align:center; font-size:14px; color:#1a1a1a; font-weight:400; background:#fff;
+}
+
+/* SKU编辑器卡片 */
+.sku-editor-card {
+  border:1.5px solid #e8e8e8; border-radius:8px;
+  padding:8px 10px; margin-bottom:8px;
+  background:#fff; cursor:pointer; transition:all .2s;
+}
+.sku-editor-card.active { border-color:#FF6600; background:#fff8f3; }
+.sku-card-top { display:flex; align-items:center; gap:8px; }
+.sku-thumb-upload {
+  width:44px; height:44px; border-radius:6px;
+  border:1.5px dashed #e0e0e0; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; overflow:hidden; position:relative;
+  background:#fafafa; transition:border-color .2s;
+}
+.sku-thumb-upload:hover { border-color:#FF6600; }
+.sku-thumb-placeholder { font-size:11px; color:#ccc; pointer-events:none; }
+.sku-thumb-upload img { width:100%; height:100%; object-fit:cover; position:absolute; inset:0; }
+.sku-text-input { flex:1; font-size:13px; margin-bottom:0 !important; }
+.sku-card-del {
+  width:22px; height:22px; border-radius:50%;
+  background:#f0f0f0; border:none; cursor:pointer;
+  font-size:14px; color:#999; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.sku-card-del:hover { background:#ffe0e0; color:#ff4d4f; }
+/* SKU价格行 */
+.sku-card-price-row {
+  display:flex; gap:8px; margin-top:8px; padding-top:8px;
+  border-top:1px solid #f0f0f0;
+}
+.sku-price-field {
+  flex:1; display:flex; align-items:center;
+  border:1px solid #e8e8e8; border-radius:6px;
+  overflow:hidden; background:#fafafa;
+}
+.sku-price-label {
+  font-size:11px; color:#999; padding:0 6px;
+  white-space:nowrap; border-right:1px solid #e8e8e8;
+  background:#f5f5f5; height:32px; display:flex; align-items:center;
+}
+.sku-price-input {
+  flex:1; border:none; outline:none; padding:6px 8px;
+  font-size:13px; color:#333; background:transparent; width:0;
+}
+
+/* 订单页SKU卡片 */
+.o-sku-card {
+  display:flex; align-items:center; gap:8px;
+  border:1.5px solid #e0e0e0; border-radius:8px;
+  padding:8px 10px; cursor:pointer;
+  background:#fff; transition:all .2s;
+  min-width:130px; max-width:calc(50% - 5px);
+}
+.o-sku-card.active {
+  border-color:#FF6600; background:#fff8f3;
+}
+.o-sku-thumb {
+  width:40px; height:40px; border-radius:5px;
+  overflow:hidden; flex-shrink:0;
+  background:#f5ede0; border:1px solid #eee;
+  display:flex; align-items:center; justify-content:center;
+}
+.o-sku-thumb img { width:100%; height:100%; object-fit:cover; }
+.o-sku-text { font-size:12px; color:#333; line-height:1.45; font-weight:400; flex:1; }
+
+/* 配送区 */
+.delivery-section { background:#fff; margin-top:8px; }
+.delivery-item {
+  padding:13px 16px; display:flex; align-items:center;
+  gap:10px; border-bottom:1px solid #f0f0f0; cursor:pointer;
+}
+.delivery-icon-wrap {
+  width:22px; height:22px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.delivery-content { flex:1; }
+.delivery-main { font-size:13px; color:#07A96B; font-weight:400; line-height:1.5; }
+.delivery-sub { font-size:12px; color:#999; font-weight:400; margin-top:2px; }
+.delivery-arrow-r { flex-shrink:0; color:#c8c8c8; }
+
+/* 橙色支付栏 */
+.pay-section { background:#fff; margin-top:8px; padding:12px 16px 16px; }
+.pay-bar-inner {
+  background:linear-gradient(135deg,#FF8C00,#FF6600);
+  border-radius:28px; padding:14px 22px;
+  display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; box-shadow:0 4px 16px rgba(255,102,0,.32);
+}
+.pay-bar-left { display:flex; align-items:baseline; gap:6px; flex:1; min-width:0; justify-content:center; }
+.pay-bar-discount { font-size:15px; color:rgba(255,255,255,.9); font-weight:700; white-space:nowrap; }
+.pay-bar-sep { font-size:15px; color:rgba(255,255,255,.4); }
+.pay-bar-amount { font-size:15px; font-weight:600; color:#fff; line-height:1; white-space:nowrap; }
+.pay-bar-amount .yuan { font-size:15px; font-weight:600; }
+#bar-price {
+  font-size:15px; font-weight:600; color:#fff;
+  display:inline-block;
+}
+#bar-discount-num {
+  font-size:26px; font-weight:700; color:#fff;
+  display:inline-block;
+}
+@keyframes pricePop {
+  0%   { transform:scale(1); }
+  40%  { transform:scale(1.18); }
+  100% { transform:scale(1); }
+}
+.price-pop { animation: pricePop .35s cubic-bezier(.34,1.56,.64,1); }
+.pay-bar-btn { font-size:15px; font-weight:600; color:#fff; letter-spacing:1px; white-space:nowrap; flex-shrink:0; margin-left:8px; }
+
+/* 店铺行 */
+.shop-row {
+  background:#fff; margin-top:8px;
+  padding:12px 16px; display:flex; align-items:center; gap:8px;
+  border-bottom:1px solid #f0f0f0;
+}
+.shop-icon-box {
+  width:20px; height:20px; background:#FF6600; border-radius:4px;
+  display:flex; align-items:center; justify-content:center;
+  color:#fff; font-size:11px; font-weight:700; flex-shrink:0;
+}
+.shop-name-text { font-size:14px; font-weight:600; color:#1a1a1a; flex:1; }
+.shop-arrow { color:#c8c8c8; }
+
+/* 弹窗 */
+.modal-overlay {
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,.5); z-index:300;
+  align-items:flex-end; justify-content:center;
+}
+.modal-overlay.show { display:flex; }
+.modal {
+  background:#fff; width:100%; max-width:600px;
+  border-radius:16px 16px 0 0; padding:22px 20px 40px;
+  animation:slideUp .25s ease; position:relative;
+}
+@keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.modal-close {
+  position:absolute; right:18px; top:18px;
+  font-size:20px; color:#999; background:none; border:none; cursor:pointer;
+}
+.modal-title { text-align:center; font-size:16px; font-weight:600; margin-bottom:18px; }
+.modal-row { display:flex; justify-content:space-between; margin-bottom:12px; font-size:14px; }
+.modal-divider { border:none; border-top:1px solid #f0f0f0; margin:10px 0; }
+.modal-total { display:flex; justify-content:space-between; font-size:15px; font-weight:700; }
+.modal-total-val { color:#FF6600; font-size:19px; font-weight:800; }
+.modal-pay-btn {
+  width:100%; background:linear-gradient(135deg,#FF8C00,#FF6600);
+  color:#fff; border:none; border-radius:28px;
+  padding:15px; font-size:17px; font-weight:700;
+  cursor:pointer; margin-top:18px; letter-spacing:2px;
+  box-shadow:0 4px 16px rgba(255,102,0,.35);
+}
+.modal-cancel {
+  width:100%; background:none; border:1.5px solid #e8e8e8;
+  border-radius:28px; padding:13px; font-size:15px; color:#666;
+  cursor:pointer; margin-top:10px;
+}
+.toast {
+  display:none; position:fixed; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  background:rgba(0,0,0,.75); color:#fff;
+  padding:12px 24px; border-radius:8px;
+  font-size:15px; z-index:400; text-align:center;
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== 编辑器页面 ==================== -->
+<div id="editor-page">
+  <div class="editor-header">
+    <span style="font-size:20px">🛒</span>
+    <span class="editor-header-title">结算页设置</span>
+    <span class="editor-mode-badge">编辑模式</span>
+  </div>
+  <p class="editor-hint">填好内容后点「生成结算页」，直接得到可分享的购物页面</p>
+
+  <!-- 店铺 & 商品 -->
+  <div class="editor-section">
+    <div class="editor-section-title">店铺 &amp; 商品</div>
+    <div class="field-group">
+      <div class="field-label">店铺名称</div>
+      <input class="field-input" id="e-shop" type="text" value="汇生大药房旗舰店">
+    </div>
+    <div class="field-group">
+      <div class="field-label">商品标题</div>
+      <textarea class="field-input" id="e-title" rows="3">金诃舒更胶囊妇女气血不足更年期综合征引起烦躁不安头昏乏力失眠</textarea>
+    </div>
+    <div class="field-group">
+      <div class="field-label">OTC说明文字</div>
+      <input class="field-input" id="e-otc" type="text" value="本品为处方药，非质量问题不支持退换">
+    </div>
+    <div class="field-group">
+      <div class="field-label">已售/热度文案（如：已售4万+）</div>
+      <input class="field-input" id="e-sold" type="text" value="已售 4万+">
+    </div>
+    <div class="field-group">
+      <div class="field-label" style="margin-bottom:8px;">SKU规格卡片（点击选中默认项，可上传各自缩略图）</div>
+      <div id="sku-editor-list">
+        <div class="sku-editor-card" data-index="0">
+          <div class="sku-card-top">
+            <div class="sku-thumb-upload" onclick="triggerSkuImg(this)">
+              <input type="file" accept="image/*" style="display:none" onchange="previewSkuImg(event,this)">
+              <div class="sku-thumb-placeholder">图</div>
+            </div>
+            <input class="field-input sku-text-input" type="text" value="36粒×2盒 调理卵巢 改善停经">
+            <button class="sku-card-del" onclick="delSkuCard(this)">×</button>
+          </div>
+          <div class="sku-card-price-row">
+            <div class="sku-price-field">
+              <span class="sku-price-label">售价¥</span>
+              <input class="sku-price-input" type="number" step="0.1" placeholder="129.9" value="129.9">
+            </div>
+            <div class="sku-price-field">
+              <span class="sku-price-label">原价¥</span>
+              <input class="sku-price-input" type="number" step="0.1" placeholder="199.9" value="199.9">
+            </div>
+            <div class="sku-price-field">
+              <span class="sku-price-label">共减¥</span>
+              <input class="sku-price-input" type="number" step="0.1" placeholder="50" value="50">
+            </div>
+          </div>
+        </div>
+        <div class="sku-editor-card active" data-index="1">
+          <div class="sku-card-top">
+            <div class="sku-thumb-upload" onclick="triggerSkuImg(this)">
+              <input type="file" accept="image/*" style="display:none" onchange="previewSkuImg(event,this)">
+              <div class="sku-thumb-placeholder">图</div>
+            </div>
+            <input class="field-input sku-text-input" type="text" value="36粒×1盒 体验装 治疗选优惠装">
+            <button class="sku-card-del" onclick="delSkuCard(this)">×</button>
+          </div>
+          <div class="sku-card-price-row">
+            <div class="sku-price-field">
+              <span class="sku-price-label">售价¥</span>
+              <input class="sku-price-input" type="number" step="0.1" placeholder="79.9" value="79.9">
+            </div>
+            <div class="sku-price-field">
+              <span class="sku-price-label">原价¥</span>
+              <input class="sku-price-input" type="number" step="0.1" placeholder="99.9" value="99.9">
+            </div>
+            <div class="sku-price-field">
+              <span class="sku-price-label">共减¥</span>
+              <input class="sku-price-input" type="number" step="0.1" placeholder="20" value="20">
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="add-ladder-btn" style="margin-top:8px;" onclick="addSkuCard()">+ 添加规格</button>
+    </div>
+  </div>
+
+  <!-- 商品图片 -->
+  <div class="editor-section">
+    <div class="editor-section-title">商品图片</div>
+    <div class="img-upload-area" id="img-upload-area">
+      <input type="file" accept="image/*" onchange="previewImg(event)">
+      <span class="img-upload-icon">🖼️</span>
+      <span>点击上传商品图</span>
+    </div>
+  </div>
+
+  <!-- 阶梯优惠（仅作备用，SKU各自有减价字段） -->
+  <div class="editor-section">
+    <div class="editor-section-title">阶梯优惠设置（数量越多减越多）</div>
+    <div id="ladder-rows">
+      <div class="ladder-row">
+        <input class="ladder-num" type="number" value="1" min="1">
+        <span class="ladder-label">件减</span>
+        <input class="ladder-val" type="number" value="0" min="0">
+        <span class="ladder-unit">元</span>
+        <button class="ladder-del" onclick="delLadder(this)">×</button>
+      </div>
+      <div class="ladder-row">
+        <input class="ladder-num" type="number" value="2" min="1">
+        <span class="ladder-label">件减</span>
+        <input class="ladder-val" type="number" value="30" min="0">
+        <span class="ladder-unit">元</span>
+        <button class="ladder-del" onclick="delLadder(this)">×</button>
+      </div>
+    </div>
+    <button class="add-ladder-btn" onclick="addLadder()">+ 添加优惠档位</button>
+  </div>
+
+  <!-- 配送 -->
+  <div class="editor-section">
+    <div class="editor-section-title">物流信息</div>
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">配送说明（绿色主文字）</div>
+        <input class="field-input" id="e-delivery" type="text" value="预计明天发货 | 承诺48小时内发货">
+      </div>
+      <div class="field-group">
+        <div class="field-label">配送副文字</div>
+        <input class="field-input" id="e-ship-sub" type="text" value="快递：免运费">
+      </div>
+    </div>
+  </div>
+
+  <button class="generate-btn" onclick="generateOrder()">🚀 生成结算页</button>
+</div>
+
+<!-- ==================== 订单预览页面 ==================== -->
+<div id="order-page">
+  <div class="nav-bar">
+    <button class="nav-back" onclick="backToEditor()">‹</button>
+    <span class="nav-title">确认订单</span>
+  </div>
+
+  <!-- 店铺名 -->
+  <div class="shop-row">
+    <div class="shop-icon-box">店</div>
+    <span class="shop-name-text" id="o-shop">汇生大药房旗舰店</span>
+    <svg class="shop-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <!-- 商品主区域 -->
+  <div class="product-main">
+    <!-- 图 + 标题 -->
+    <div class="product-top">
+      <div class="product-img-box" id="o-img-box">
+        <svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#c8602a"/><stop offset="100%" stop-color="#7a3010"/>
+            </linearGradient>
+          </defs>
+          <rect width="100" height="100" fill="url(#g1)"/>
+          <text x="50" y="32" font-size="10" fill="#FFD700" text-anchor="middle" font-weight="bold">金诃舒更</text>
+          <text x="50" y="46" font-size="9" fill="#fff" text-anchor="middle">内调气血</text>
+          <text x="50" y="58" font-size="9" fill="#fff" text-anchor="middle">养宫护巢</text>
+          <rect x="10" y="66" width="80" height="20" rx="3" fill="rgba(0,0,0,.3)"/>
+          <text x="50" y="78" font-size="8" fill="#FFD700" text-anchor="middle">官方正品</text>
+          <text x="50" y="89" font-size="6" fill="#ccc" text-anchor="middle">国药准字Z20026473</text>
+        </svg>
+      </div>
+      <div class="product-right">
+        <div class="title-line">
+          <span class="tmall-badge">天猫好药</span>
+          <span class="product-title-text" id="o-title">金诃舒更胶囊妇女气血不足更年期综合征引起烦躁不安头昏乏力失眠</span>
+        </div>
+        <div class="otc-line">
+          <span class="otc-label">OTC</span>
+          <span id="o-otc">本品为非处方药，非质量问题不支持退换</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 信息条 -->
+    <div class="info-bar">
+      <span class="info-chip-green">假一赔四</span>
+      <span class="info-chip" id="o-sold-chip">48小时内 100+ 人已买</span>
+      <span class="info-chip">616人评价"效果不错"</span>
+      <span class="info-chip">超2千回头客</span>
+    </div>
+
+    <!-- 价格 -->
+    <div class="price-section">
+      <span class="price-main"><span class="yuan">¥</span><span id="o-price">79.9</span></span>
+      <span class="price-original" id="o-original">¥99.9</span>
+    </div>
+
+    <!-- 产品名称（SKU卡片选择） -->
+    <div style="padding:14px 16px 6px; border-bottom:1px solid #f0f0f0;">
+      <div style="font-size:13px; color:#666; font-weight:400; margin-bottom:10px;">产品名称</div>
+      <div id="o-sku-cards" style="display:flex; gap:10px; flex-wrap:wrap; padding-bottom:4px;"></div>
+    </div>
+
+    <!-- 数量 -->
+    <div class="row-item" style="border-bottom:none;">
+      <span class="row-label">数量</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="qty-control">
+          <button class="qty-btn" onclick="changeQty(-1)">−</button>
+          <input class="qty-num" id="qty" type="text" value="1" readonly>
+          <button class="qty-btn" onclick="changeQty(1)">+</button>
+        </div>
+        <span style="font-size:12px; color:#999;">有货（限购1件）</span>
+      </div>
+    </div>
+
+  <!-- 配送信息 -->
+  <div class="delivery-section">
+    <div class="delivery-item">
+      <!-- 礼物盒线条SVG -->
+      <div class="delivery-icon-wrap">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="8" width="16" height="10" rx="1.5" stroke="#999" stroke-width="1.3"/>
+          <rect x="6" y="8" width="8" height="10" stroke="#999" stroke-width="1.3"/>
+          <rect x="1" y="5" width="18" height="3.5" rx="1" stroke="#999" stroke-width="1.3"/>
+          <path d="M10 5C10 5 7.5 2 6 2.5C4.5 3 4.5 5 6 5.5C7.5 6 10 5 10 5Z" stroke="#999" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M10 5C10 5 12.5 2 14 2.5C15.5 3 15.5 5 14 5.5C12.5 6 10 5 10 5Z" stroke="#999" stroke-width="1.2" stroke-linejoin="round"/>
+          <line x1="10" y1="5" x2="10" y2="18" stroke="#999" stroke-width="1.3"/>
+        </svg>
+      </div>
+      <div class="delivery-content">
+        <div class="delivery-main" style="color:#999;">支持送礼物</div>
+      </div>
+      <svg class="delivery-arrow-r" width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="delivery-item" style="border-bottom:none;">
+      <!-- 货车线条SVG -->
+      <div class="delivery-icon-wrap">
+        <svg width="22" height="20" viewBox="0 0 22 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="5" width="13" height="9" rx="1.2" stroke="#999" stroke-width="1.3"/>
+          <path d="M14 8h4l2 3v3h-6V8Z" stroke="#999" stroke-width="1.3" stroke-linejoin="round"/>
+          <circle cx="5" cy="16" r="2" stroke="#999" stroke-width="1.3"/>
+          <circle cx="17" cy="16" r="2" stroke="#999" stroke-width="1.3"/>
+          <line x1="7" y1="16" x2="15" y2="16" stroke="#999" stroke-width="1.3"/>
+          <line x1="1" y1="16" x2="3" y2="16" stroke="#999" stroke-width="1.3"/>
+        </svg>
+      </div>
+      <div class="delivery-content">
+        <div class="delivery-main" id="o-delivery-main">预计明天发货 | 承诺48小时内发货</div>
+        <div class="delivery-sub" id="o-delivery-sub">快递：免运费</div>
+      </div>
+      <svg class="delivery-arrow-r" width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- 橙色支付栏（内嵌，不fixed） -->
+  <div class="pay-section">
+    <div class="pay-bar-inner" onclick="showModal()">
+      <div class="pay-bar-left">
+        <span class="pay-bar-discount">共减 <span id="bar-discount-num">¥0.00</span></span>
+        <span class="pay-bar-sep">|</span>
+        <span class="pay-bar-amount">立即支付 ¥<span id="bar-price">79.90</span></span>
+      </div>
+      <div class="pay-bar-btn">确认付款 ›</div>
+    </div>
+  </div>
+
+  <div style="height:24px;"></div>
+</div>
+
+<!-- 弹窗 -->
+<div class="modal-overlay" id="modal" onclick="closeModalOut(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <div class="modal-title">订单确认</div>
+    <div class="modal-row">
+      <span style="color:#666">商品金额</span>
+      <span>¥<span id="m-sub">79.90</span></span>
+    </div>
+    <div class="modal-row">
+      <span style="color:#666">运费</span>
+      <span style="color:#FF6600">免运费</span>
+    </div>
+    <div class="modal-row">
+      <span style="color:#666">优惠减免</span>
+      <span style="color:#ff4d4f">-¥<span id="m-dis">0.00</span></span>
+    </div>
+    <hr class="modal-divider">
+    <div class="modal-total">
+      <span>合计</span>
+      <span class="modal-total-val">¥<span id="m-final">79.90</span></span>
+    </div>
+    <button class="modal-pay-btn" onclick="handlePay()">立即支付</button>
+    <button class="modal-cancel" onclick="closeModal()">取消</button>
+  </div>
+</div>
+<div class="toast" id="toast">🎉 订单提交成功！</div>
+
+<script>
+// ---- 编辑器：SKU卡片点击选中默认项 ----
+document.getElementById('sku-editor-list').addEventListener('click', function(e){
+  const card = e.target.closest('.sku-editor-card');
+  if(!card) return;
+  if(e.target.classList.contains('sku-card-del')) return;
+  if(e.target.tagName==='INPUT') return;
+  document.querySelectorAll('.sku-editor-card').forEach(c=>c.classList.remove('active'));
+  card.classList.add('active');
+});
+
+// 添加SKU卡片
+function addSkuCard() {
+  const list = document.getElementById('sku-editor-list');
+  const div = document.createElement('div');
+  div.className = 'sku-editor-card';
+  div.innerHTML = `<div class="sku-card-top">
+    <div class="sku-thumb-upload" onclick="triggerSkuImg(this)">
+      <input type="file" accept="image/*" style="display:none" onchange="previewSkuImg(event,this)">
+      <div class="sku-thumb-placeholder">图</div>
+    </div>
+    <input class="field-input sku-text-input" type="text" placeholder="规格名称">
+    <button class="sku-card-del" onclick="delSkuCard(this)">×</button>
+  </div>
+  <div class="sku-card-price-row">
+    <div class="sku-price-field">
+      <span class="sku-price-label">售价¥</span>
+      <input class="sku-price-input" type="number" step="0.1" placeholder="0">
+    </div>
+    <div class="sku-price-field">
+      <span class="sku-price-label">原价¥</span>
+      <input class="sku-price-input" type="number" step="0.1" placeholder="0">
+    </div>
+    <div class="sku-price-field">
+      <span class="sku-price-label">共减¥</span>
+      <input class="sku-price-input" type="number" step="0.1" placeholder="0">
+    </div>
+  </div>`;
+  list.appendChild(div);
+}
+function delSkuCard(btn) {
+  const cards = document.querySelectorAll('.sku-editor-card');
+  if(cards.length<=1) return;
+  const card = btn.closest('.sku-editor-card');
+  const wasActive = card.classList.contains('active');
+  card.remove();
+  if(wasActive) {
+    const remaining = document.querySelector('.sku-editor-card');
+    if(remaining) remaining.classList.add('active');
+  }
+}
+function triggerSkuImg(wrap) { wrap.querySelector('input[type=file]').click(); }
+function previewSkuImg(e, input) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  const wrap = input.closest('.sku-thumb-upload');
+  reader.onload = ev => {
+    wrap.querySelector('.sku-thumb-placeholder').style.display='none';
+    let img = wrap.querySelector('img');
+    if(!img){ img=document.createElement('img'); wrap.appendChild(img); }
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ---- 主商品图片预览 ----
+let uploadedImgSrc = null;
+function previewImg(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    uploadedImgSrc = ev.target.result;
+    const area = document.getElementById('img-upload-area');
+    let img = area.querySelector('img.img-preview');
+    if(!img){ img=document.createElement('img'); img.className='img-preview'; area.appendChild(img); }
+    img.src = uploadedImgSrc;
+    area.querySelectorAll(':not(img):not(input)').forEach(n=>n.style.opacity='0');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ---- 阶梯优惠 ----
+function addLadder() {
+  const row = document.createElement('div');
+  row.className = 'ladder-row';
+  row.innerHTML = `<input class="ladder-num" type="number" value="1" min="1">
+    <span class="ladder-label">件减</span>
+    <input class="ladder-val" type="number" value="0" min="0">
+    <span class="ladder-unit">元</span>
+    <button class="ladder-del" onclick="delLadder(this)">×</button>`;
+  document.getElementById('ladder-rows').appendChild(row);
+}
+function delLadder(btn) {
+  const rows = document.querySelectorAll('#ladder-rows .ladder-row');
+  if(rows.length<=1) return;
+  btn.closest('.ladder-row').remove();
+}
+
+// ---- 生成结算页 ----
+function generateOrder() {
+  const shop    = document.getElementById('e-shop').value || '店铺名称';
+  const title   = document.getElementById('e-title').value || '商品标题';
+  const otc     = document.getElementById('e-otc').value;
+  const sold    = document.getElementById('e-sold').value;
+  const delMain = document.getElementById('e-delivery').value;
+  const delSub  = document.getElementById('e-ship-sub').value;
+
+  // 收集SKU卡片数据（含各自价格）
+  const skuCards = [];
+  let activeSkuIndex = 0;
+  document.querySelectorAll('.sku-editor-card').forEach((card, i) => {
+    const text = card.querySelector('.sku-text-input').value || '规格' + (i+1);
+    const imgEl = card.querySelector('.sku-thumb-upload img');
+    const imgSrc = imgEl ? imgEl.src : null;
+    const priceInputs = card.querySelectorAll('.sku-price-input');
+    const price    = parseFloat(priceInputs[0]?.value) || 0;
+    const original = parseFloat(priceInputs[1]?.value) || 0;
+    const discount = parseFloat(priceInputs[2]?.value) || 0;
+    skuCards.push({ text, imgSrc, price, original, discount });
+    if(card.classList.contains('active')) activeSkuIndex = i;
+  });
+
+  window._skuCards = skuCards;
+  window._activeSkuIndex = activeSkuIndex;
+
+  // 写入订单页文字
+  document.getElementById('o-shop').textContent = shop;
+  document.getElementById('o-title').textContent = title;
+  document.getElementById('o-otc').textContent = otc;
+  document.getElementById('o-sold-chip').textContent = sold;
+  document.getElementById('o-delivery-main').textContent = delMain;
+  document.getElementById('o-delivery-sub').textContent = delSub;
+
+  // 主图
+  if(uploadedImgSrc) {
+    document.getElementById('o-img-box').innerHTML =
+      `<img src="${uploadedImgSrc}" style="width:100%;height:100%;object-fit:cover;">`;
+  }
+
+  // 渲染SKU卡片
+  renderSkuCards(skuCards, activeSkuIndex);
+
+  window._qty = 1;
+  document.getElementById('qty').value = 1;
+
+  // 初始化价格（在 _qty 赋值之后）
+  applySku(activeSkuIndex);
+
+  document.getElementById('editor-page').style.display = 'none';
+  document.getElementById('order-page').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+function renderSkuCards(skuCards, activeIdx) {
+  const container = document.getElementById('o-sku-cards');
+  container.innerHTML = '';
+  skuCards.forEach((sku, i) => {
+    const card = document.createElement('div');
+    card.className = 'o-sku-card' + (i===activeIdx ? ' active' : '');
+    let thumbHtml;
+    if(sku.imgSrc) {
+      thumbHtml = `<div class="o-sku-thumb"><img src="${sku.imgSrc}"></div>`;
+    } else {
+      thumbHtml = `<div class="o-sku-thumb">
+        <svg width="40" height="40" viewBox="0 0 40 40"><rect width="40" height="40" fill="#e8d5b8" rx="4"/>
+        <text x="20" y="25" font-size="8" fill="#a0806a" text-anchor="middle">图片</text></svg></div>`;
+    }
+    // 先设置 innerHTML，再绑定 onclick（否则 innerHTML 会覆盖事件）
+    card.innerHTML = thumbHtml + `<span class="o-sku-text">${sku.text}</span>`;
+    card.onclick = () => selectSku(i);
+    container.appendChild(card);
+  });
+}
+
+function selectSku(idx) {
+  window._activeSkuIndex = idx;
+  document.querySelectorAll('.o-sku-card').forEach((c,i)=>{
+    c.classList.toggle('active', i===idx);
+  });
+  window._qty = 1;
+  document.getElementById('qty').value = 1;
+  applySku(idx);
+  // 共减数字弹跳动画
+  const discEl = document.getElementById('bar-discount-num');
+  discEl.classList.remove('price-pop');
+  void discEl.offsetWidth;
+  discEl.classList.add('price-pop');
+}
+
+function applySku(idx) {
+  const sku = (window._skuCards || [])[idx];
+  if(!sku) return;
+  window._curSku = { price: sku.price, original: sku.original, discount: sku.discount };
+  // 顶部大价格 = 售价（用户填的最终价）
+  document.getElementById('o-price').textContent = sku.price;
+  // 划线 = 原价
+  document.getElementById('o-original').textContent = '¥' + sku.original;
+  updatePrices();
+}
+
+function backToEditor() {
+  document.getElementById('order-page').style.display = 'none';
+  document.getElementById('editor-page').style.display = 'block';
+  window.scrollTo(0,0);
+}
+
+// ---- 价格计算 ----
+function updatePrices() {
+  const q   = window._qty || 1;
+  const cur = window._curSku || { price: 0, original: 0, discount: 0 };
+  // 支付价 = 售价（最终价），共减 = 原价 - 售价（展示优惠幅度）
+  const payPrice = cur.price * q;
+  const savedAmt = Math.max(0, cur.original - cur.price);
+  document.getElementById('bar-discount-num').textContent = '¥' + savedAmt.toFixed(2);
+  document.getElementById('bar-price').textContent = payPrice.toFixed(2);
+  document.getElementById('m-sub').textContent = (cur.original * q).toFixed(2);
+  document.getElementById('m-dis').textContent = (savedAmt * q).toFixed(2);
+  document.getElementById('m-final').textContent = payPrice.toFixed(2);
+}
+function changeQty(d) {
+  const cur = (window._qty||1) + d;
+  if(cur<1||cur>9) return;
+  window._qty = cur;
+  document.getElementById('qty').value = cur;
+  updatePrices();
+}
+
+// ---- 弹窗 ----
+function showModal() { document.getElementById('modal').classList.add('show'); }
+function closeModal() { document.getElementById('modal').classList.remove('show'); }
+function closeModalOut(e) { if(e.target===document.getElementById('modal')) closeModal(); }
+function handlePay() {
+  closeModal();
+  const t = document.getElementById('toast');
+  t.style.display = 'block';
+  setTimeout(()=>{ t.style.display='none'; }, 2500);
+}
+</script>
+</body>
+</html>
