@@ -958,13 +958,15 @@ function openZoom(box) {
 function closeZoom() {
   const overlay = document.getElementById('imgZoomOverlay');
   overlay.classList.remove('open');
-  // 恢复滚动位置
-  const scrollY = parseInt(document.body.dataset.scrollY || '0');
-  document.body.style.position = '';
-  document.body.style.top = '';
-  document.body.style.width = '';
-  window.scrollTo(0, scrollY);
-  setTimeout(()=>{ overlay.style.display = 'none'; }, 380);
+  // 必须等动画完全结束后再恢复，否则页面会在动画中途跳位
+  setTimeout(()=>{
+    overlay.style.display = 'none';
+    const scrollY = parseInt(document.body.dataset.scrollY || '0');
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo(0, scrollY);
+  }, 400);
 }
 function showModal() { document.getElementById('modal').classList.add('show'); }
 function closeModal() { document.getElementById('modal').classList.remove('show'); }
